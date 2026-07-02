@@ -267,7 +267,7 @@ def test_walk_skips_entry_when_stat_raises_oserror(
     def fake_scandir(path):
         entries = list(real_scandir(path))
         if Path(path) == tmp_path:
-            entries.append(_BrokenEntry())
+            entries.append(_BrokenEntry())  # ty: ignore[invalid-argument-type]
         return entries
 
     monkeypatch.setattr(os, "scandir", fake_scandir)

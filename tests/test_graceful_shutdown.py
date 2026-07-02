@@ -1,6 +1,7 @@
 import signal
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 from virgilio.events import EventType
@@ -20,8 +21,8 @@ class RecordingVirgilio(Virgilio):
         self.events.append((event, path))
 
 
-def start_run(virgilio: Virgilio, **kwargs) -> threading.Thread:
-    errors = []
+def start_run(virgilio: Virgilio, **kwargs) -> tuple[threading.Thread, list[Exception]]:
+    errors: list[Exception] = []
 
     def target():
         try:
@@ -30,14 +31,13 @@ def start_run(virgilio: Virgilio, **kwargs) -> threading.Thread:
             errors.append(exc)
 
     thread = threading.Thread(target=target, daemon=True)
-    thread.errors = errors
     thread.start()
-    return thread
+    return thread, errors
 
 
 def test_stop_from_another_thread_returns_well_under_interval(tmp_path: Path) -> None:
     virgilio = RecordingVirgilio(tmp_path)
-    thread = start_run(virgilio, interval=INTERVAL)
+    thread, errors = start_run(virgilio, interval=INTERVAL)
     time.sleep(MARGIN)
 
     started_at = time.monotonic()
@@ -47,7 +47,7 @@ def test_stop_from_another_thread_returns_well_under_interval(tmp_path: Path) ->
 
     assert not thread.is_alive()
     assert elapsed < FAST_BOUND
-    assert thread.errors == []
+    assert errors == []
 
 
 def test_stop_before_run_does_not_raise_and_run_still_works(tmp_path: Path) -> None:
@@ -55,7 +55,7 @@ def test_stop_before_run_does_not_raise_and_run_still_works(tmp_path: Path) -> N
 
     virgilio.stop()
 
-    thread = start_run(virgilio, interval=0.02)
+    thread, errors = start_run(virgilio, interval=0.02)
     time.sleep(0.1)
     (tmp_path / "new.txt").write_bytes(b"new")
     time.sleep(0.1)
@@ -63,7 +63,7 @@ def test_stop_before_run_does_not_raise_and_run_still_works(tmp_path: Path) -> N
     thread.join(timeout=1.0)
 
     assert not thread.is_alive()
-    assert thread.errors == []
+    assert errors == []
     assert (EventType.CREATED, "new.txt") in virgilio.events
 
 
@@ -79,7 +79,7 @@ def test_run_on_background_thread_does_not_raise_and_responds_to_stop(
 ) -> None:
     virgilio = RecordingVirgilio(tmp_path)
 
-    thread = start_run(virgilio, interval=0.02)
+    thread, errors = start_run(virgilio, interval=0.02)
     time.sleep(0.1)
     (tmp_path / "new.txt").write_bytes(b"new")
     time.sleep(0.1)
@@ -87,20 +87,20 @@ def test_run_on_background_thread_does_not_raise_and_responds_to_stop(
     thread.join(timeout=1.0)
 
     assert not thread.is_alive()
-    assert thread.errors == []
+    assert errors == []
     assert (EventType.CREATED, "new.txt") in virgilio.events
 
 
 def test_registered_signal_handler_calls_stop(tmp_path: Path, monkeypatch) -> None:
     virgilio = RecordingVirgilio(tmp_path)
-    captured: dict[int, object] = {}
+    captured: dict[int, Callable[[int, object], None]] = {}
 
     def fake_signal(signum, handler):
         captured[signum] = handler
 
     monkeypatch.setattr(signal, "signal", fake_signal)
 
-    thread = start_run(virgilio, interval=0.02)
+    thread, _errors = start_run(virgilio, interval=0.02)
     time.sleep(0.1)
 
     assert signal.SIGTERM in captured
