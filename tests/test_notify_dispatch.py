@@ -118,7 +118,7 @@ def test_unrecognized_event_type_logs_and_calls_notify_before_raising(tmp_path):
     bad_event = _UnrecognizedEvent()
 
     with pytest.raises(ValueError):
-        virgilio._notify(bad_event, "a.txt")
+        virgilio._notify(bad_event, "a.txt")  # ty: ignore[invalid-argument-type]
 
     assert virgilio.calls == [("notify", bad_event, "a.txt")]
     log_lines = (tmp_path / "log.txt").read_text().splitlines()
