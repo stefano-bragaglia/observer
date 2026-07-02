@@ -1,9 +1,19 @@
 # Changelog
 
-All notable changes to VirgilIO are documented in this file.
+All notable changes to virgilio are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.1] - 2026-07-02
+
+### Changed
+
+- Renamed the project from `observer` to `virgilio` (PyPI already had a package
+  named `observer`); package, module, CLI command, and class all renamed to match.
+- Fully documented CLI `--help` output: description, per-flag help text, defaults,
+  and an example invocation.
+- New logo; README rebranded as "Virgil.IO".
 
 ## [1.0.0] - 2026-07-01
 
@@ -33,4 +43,5 @@ Initial stable release.
   rather than crashing the daemon).
 - `py.typed` marker (PEP 561) — the package ships inline type hints.
 
+[1.0.1]: https://github.com/stefano-bragaglia/virgilio/releases/tag/v1.0.1
 [1.0.0]: https://github.com/stefano-bragaglia/virgilio/releases/tag/v1.0.0
